@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magarlabs — Browser Extensions</title>
+<meta name="description" content="Free browser extensions by Deepak Thapa. No account, no server.">
+<meta name="author" content="Deepak Thapa">
+<meta property="og:title" content="Magarlabs — Browser Extensions">
+<meta property="og:description" content="Free browser extensions by Deepak Thapa.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#12110E" id="themeColor">
+<link rel="icon" href="assets/avatar.jpg">
+<script>
+  /* Runs before first paint so a saved light choice never flashes dark. */
+  (function () {
+    try { if (localStorage.getItem("ma-theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Noto+Sans+Arabic:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600&display=swap">
+<style>
+  /* Magarlabs tokens — magar-labs/tailwind.config.js.
+     DARK IS THE DEFAULT; light is opt-in via [data-theme="light"]. */
+  :root {
+    color-scheme: dark;
+    --base: #12110E; --panel: #1B1A16; --panel-2: #24221D;
+    --line: #2F2C26; --line-strong: #423E36;
+    --ink: #F2F0EB; --ink-2: #B3AEA3; --ink-3: #8A867B;
+    --accent: #3B82F6; --accent-deep: #2563EB; --accent-soft: rgba(59,130,246,.16);
+    --flag-ring: rgba(255,255,255,.22);
+    --overlay: rgba(0,0,0,.6);
+    --sel: rgba(59,130,246,.32);
+    --dot: rgba(255,255,255,.075); --dot-hi: 59,130,246;
+    --sh-card: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.32);
+    --sh-popup: 0 4px 8px rgba(0,0,0,.4), 0 24px 64px rgba(0,0,0,.55);
+    --sh-accent: 0 1px 2px rgba(0,0,0,.35), 0 4px 12px rgba(37,99,235,.35);
+
+    --r-xs: 6px; --r-sm: 8px; --r-md: 10px; --r-lg: 12px; --r-xl: 16px;
+    --f-display: "Space Grotesk", system-ui, sans-serif;
+    --f-body: "Inter", "Noto Sans Devanagari", "Noto Sans Arabic", system-ui, sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --base: #FAF9F6; --panel: #FFFFFF; --panel-2: #F2F0EB;
+    --line: #E8E5DF; --line-strong: #D5D1C8;
+    --ink: #1B1A16; --ink-2: #5B584F; --ink-3: #8C887D;
+    --accent: #2563EB; --accent-deep: #1D4ED8; --accent-soft: #EBF1FE;
+    --flag-ring: rgba(27,26,22,.14);
+    --overlay: rgba(27,26,22,.4);
+    --sel: rgba(37,99,235,.18);
+    --dot: rgba(27,26,22,.10); --dot-hi: 37,99,235;
+    --sh-card: 0 1px 2px rgba(27,26,22,.04), 0 8px 24px rgba(27,26,22,.05);
+    --sh-popup: 0 4px 8px rgba(27,26,22,.06), 0 24px 64px rgba(27,26,22,.12);
+    --sh-accent: 0 1px 2px rgba(29,78,216,.25), 0 4px 12px rgba(37,99,235,.25);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--base); color: var(--ink);
+    font-family: var(--f-body); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--sel); }
+  img { display: block; max-width: 100%; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  h1, h2 { font-family: var(--f-display); margin: 0; letter-spacing: -.01em; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
+
+  #bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  main { position: relative; z-index: 1; width: 100%; max-width: 620px; margin-inline: auto; padding: 28px 20px 44px; }
+
+  .label {
+    margin: 0 0 10px;
+    font-family: var(--f-mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  }
+  /* Arabic/Devanagari: tracked-out mono breaks joins and has no glyphs */
+  .script-complex .label {
+    font-family: var(--f-body); letter-spacing: normal; text-transform: none; font-size: 12px;
+  }
+
+  /* ---------- header ---------- */
+  .head { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+  .welcome { margin: 0 0 22px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+  .head .me { width: 38px; height: 38px; border-radius: 999px; object-fit: cover; flex-shrink: 0; }
+  .head h1 { font-size: 16px; font-weight: 600; line-height: 1.25; white-space: nowrap; }
+  .head .handle { font-family: var(--f-mono); font-size: 11.5px; color: var(--ink-3); }
+  .head .who { min-width: 0; }
+  .head .right { margin-inline-start: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  /* four buttons + a nowrap name overflow a narrow phone — Support goes icon-only */
+  @media (max-width: 420px) {
+    #supportBtn { padding-inline: 8px; }
+    #supportBtn span { display: none; }
+  }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 30px; padding-inline: 10px; border-radius: var(--r-sm);
+    font-size: 12.5px; font-weight: 600; white-space: nowrap;
+    border: 1px solid var(--line); background: var(--panel);
+    transition: border-color .18s ease, background-color .18s ease, transform .12s ease;
+  }
+  .btn:hover { border-color: var(--line-strong); background: var(--panel-2); }
+  .btn:active { transform: translateY(1px); }
+  .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .btn--accent {
+    background: var(--accent); border-color: var(--accent-deep);
+    color: #fff; box-shadow: var(--sh-accent);
+  }
+  .btn--accent:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .btn--icon { padding-inline: 8px; }
+  /* sun shows in dark (click → light), moon shows in light (click → dark) */
+  #themeBtn .ico-moon { display: none; }
+  [data-theme="light"] #themeBtn .ico-sun { display: none; }
+  [data-theme="light"] #themeBtn .ico-moon { display: block; }
+
+  /* ---------- language ---------- */
+  .lang { position: relative; }
+  .flag {
+    display: inline-block; flex-shrink: 0; width: 17px; height: 12px;
+    border-radius: 2px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--flag-ring);
+  }
+  .flag svg { display: block; width: 100%; height: 100%; }
+  .lang .chev { width: 11px; height: 11px; color: var(--ink-3); transition: transform .18s ease; }
+  .lang.open .chev { transform: rotate(180deg); }
+  .lang-menu {
+    position: absolute; inset-inline-end: 0; top: calc(100% + 6px);
+    width: 178px; padding: 5px; display: none; z-index: 20;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-lg); box-shadow: var(--sh-popup);
+  }
+  .lang.open .lang-menu { display: block; animation: pop .16s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(-6px); } }
+  .lang-menu button {
+    width: 100%; display: flex; align-items: center; gap: 9px;
+    padding: 7px 9px; border-radius: var(--r-sm); font-size: 12.5px; text-align: start;
+  }
+  .lang-menu button:hover { background: var(--panel-2); }
+  /* --accent, not --accent-deep: the deep blue is unreadable on the dark panel */
+  .lang-menu button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+  /* ---------- listing ---------- */
+  .list {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--sh-card); overflow: hidden;
+  }
+  .row { position: relative; display: flex; align-items: center; gap: 12px; padding: 13px 15px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row:hover { background: var(--panel-2); }
+  .row .hit { position: absolute; inset: 0; z-index: 1; }
+  .row > *:not(.hit) { position: relative; z-index: 2; }
+  .row .icon {
+    width: 34px; height: 34px; flex-shrink: 0; border-radius: var(--r-md);
+    overflow: hidden; border: 1px solid var(--line); background: var(--panel-2);
+  }
+  .row .icon img { width: 100%; height: 100%; object-fit: cover; }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .name { display: block; font-family: var(--f-display); font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .row .desc { display: block; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+  .row .browsers { display: flex; gap: 4px; flex-shrink: 0; }
+  .row .browsers img { width: 15px; height: 15px; }
+  @media (max-width: 460px) { .row .browsers { display: none; } }
+  .row .btn { flex-shrink: 0; }
+  /* "Add to Firefox" is too wide for a narrow phone row — fall back to "Install" */
+  .lbl-short { display: none; }
+  @media (max-width: 540px) {
+    .lbl-full { display: none; }
+    .lbl-short { display: inline; }
+  }
+
+  /* ---------- faq ---------- */
+  .block { margin-top: 30px; }
+  .faq-box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-xl); overflow: hidden; }
+  .faq-item + .faq-item { border-top: 1px solid var(--line); }
+  .faq-item > button {
+    width: 100%; display: flex; align-items: center; gap: 14px;
+    padding: 12px 15px; text-align: start;
+    font-size: 13.5px; font-weight: 600; line-height: 1.4;
+  }
+  .faq-item > button:hover { background: var(--panel-2); }
+  .script-complex .faq-item > button { line-height: 1.55; }
+  .plus { margin-inline-start: auto; flex-shrink: 0; width: 18px; height: 18px; position: relative; color: var(--ink-3); }
+  .plus::before, .plus::after {
+    content: ""; position: absolute; inset-inline: 2px; top: 50%;
+    height: 1.5px; background: currentColor; border-radius: 2px; transition: transform .22s ease;
+  }
+  .plus::after { transform: rotate(90deg); }
+  .faq-item.open .plus { color: var(--accent); }
+  .faq-item.open .plus::after { transform: rotate(0deg); }
+  .faq-panel { max-height: 0; overflow: hidden; opacity: 0; transition: max-height .28s ease, opacity .2s ease; }
+  .faq-item.open .faq-panel { max-height: 400px; opacity: 1; }
+  .faq-panel p { margin: 0; padding: 0 15px 14px; font-size: 13px; line-height: 1.6; color: var(--ink-2); }
+  .faq-panel code {
+    font-family: var(--f-mono); font-size: .92em;
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: var(--r-xs); padding: .08em .35em;
+    direction: ltr; unicode-bidi: isolate; /* keep chrome://… intact in RTL */
+  }
+
+  /* ---------- contact ---------- */
+  .contact {
+    padding: 16px 18px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--sh-card);
+  }
+  .contact h2 { font-size: 14.5px; font-weight: 600; }
+  .contact p { margin: 3px 0 13px; font-size: 13px; color: var(--ink-2); }
+  .contact .links { display: flex; flex-wrap: wrap; gap: 7px; }
+
+  /* ---------- footer ---------- */
+  footer { margin-top: 26px; }
+  footer p { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--ink-3); }
+  footer .rights { font-family: var(--f-mono); margin-top: 5px; }
+
+  /* ---------- modal ---------- */
+  .modal {
+    position: fixed; inset: 0; z-index: 200; display: none;
+    align-items: center; justify-content: center; padding: 20px;
+    background: var(--overlay); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  }
+  .modal.open { display: flex; animation: pop .2s ease; }
+  .modal-card {
+    width: 100%; max-width: 380px; padding: 22px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--sh-popup);
+  }
+  .modal-card h2 { font-size: 17px; font-weight: 700; }
+  .modal-card > p { margin: 6px 0 14px; font-size: 13px; color: var(--ink-2); }
+  .rel-list { display: grid; gap: 6px; margin-bottom: 16px; }
+  .rel-list a {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: var(--r-md);
+    background: var(--panel-2); font-size: 13px; font-weight: 600;
+  }
+  .rel-list a:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .rel-list .swatch { width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; }
+  .rel-list svg { width: 13px; height: 13px; color: var(--ink-3); margin-inline-start: auto; flex-shrink: 0; }
+  [dir="rtl"] .rel-list svg { transform: scaleX(-1); }
+  .modal-foot { display: flex; justify-content: flex-end; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root" dir="ltr">
+<canvas id="bg" aria-hidden="true"></canvas>
+<main>
+
+  <!-- header -->
+  <div class="head">
+    <img class="me" src="assets/avatar.jpg" alt="">
+    <div class="who">
+      <h1>Deepak Thapa</h1>
+      <div class="handle"><bdi>@curious-mgr</bdi></div>
+    </div>
+    <div class="right">
+      <div class="lang" id="lang">
+        <button class="btn" id="langBtn" aria-haspopup="listbox" aria-expanded="false">
+          <span class="flag" id="langFlag" aria-hidden="true"></span>
+          <svg class="chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="lang-menu" id="langMenu" role="listbox"></div>
+      </div>
+      <button class="btn btn--icon" id="themeBtn" aria-pressed="false">
+        <svg class="ico-sun" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+        <svg class="ico-moon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z"/></svg>
+      </button>
+      <button class="btn btn--icon" id="changelogBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </button>
+      <a class="btn" id="supportBtn" href="#">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        <span data-i18n="support">Support</span>
+      </a>
+    </div>
+  </div>
+
+  <p class="welcome" data-i18n="welcome"></p>
+
+  <!-- listing -->
+  <p class="label" data-i18n="extensionsTitle">Extensions</p>
+  <div class="list" id="products"></div>
+
+  <!-- faq -->
+  <div class="block">
+    <p class="label" data-i18n="faqTitle">FAQ</p>
+    <div class="faq-box" id="faqList"></div>
+  </div>
+
+  <!-- contact -->
+  <div class="block">
+    <div class="contact">
+      <h2 data-i18n="contactTitle">Something not working?</h2>
+      <p data-i18n="contactBlurb"></p>
+      <div class="links">
+        <a class="btn btn--accent" id="emailBtn" href="mailto:thapadeepak726@gmail.com">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 0 0 2.22 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z"/></svg>
+          <span data-i18n="email">Email</span>
+        </a>
+        <a class="btn" href="https://github.com/Curious-Ray" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.8 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14 0 1.55-.02 2.79-.02 3.17 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+          GitHub
+        </a>
+        <a class="btn" href="https://x.com/curious_mgr" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"/></svg>
+          X
+        </a>
+        <a class="btn" href="https://www.linkedin.com/in/deepak-thapa-5464b6304/" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05a3.74 3.74 0 0 1 3.37-1.85c3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13Zm1.78 13.02H3.55V9h3.57v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0Z"/></svg>
+          LinkedIn
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p data-i18n="footerNote"></p>
+    <p class="rights">© 2026 Deepak Thapa</p>
+  </footer>
+
+</main>
+
+<!-- changelog modal -->
+<div class="modal" id="changelogModal" role="dialog" aria-modal="true" aria-labelledby="clTitle">
+  <div class="modal-card">
+    <h2 id="clTitle" data-i18n="changelog">Changelog</h2>
+    <p data-i18n="changelogBody"></p>
+    <div class="rel-list" id="changelogList"></div>
+    <div class="modal-foot"><button class="btn" id="changelogClose" data-i18n="close">Close</button></div>
+  </div>
+</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var EMAIL = "thapadeepak726@gmail.com";
+
+  /* Add a new extension by appending one object. `stores` lists every listing
+     it actually has — the Install button routes to the one matching the
+     visitor's browser. */
+  var PRODUCTS = [
+    { id: "magnific", name: "Magnific Automation", icon: "assets/magnific-automation.png", accent: "#2563EB",
+      stores: {
+        chrome: "https://chromewebstore.google.com/detail/magnific-automation-bulk/fpclkjidhbhdoeeokmjdlkcncdcmgeik",
+        edge: "https://microsoftedge.microsoft.com/addons/detail/hllhdgmdiknaaepbkkleojkenfdgflgc",
+        firefox: "https://addons.mozilla.org/en-US/firefox/addon/magnific-automation-in-bulk/"
+      } },
+    { id: "higgsfield", name: "Higgsfield Automation", icon: "assets/higgsfield-automation.png", accent: "#65A30D",
+      stores: {
+        chrome: "https://chromewebstore.google.com/detail/higgsfield-automation-bul/hdhkmndbgklmnccbdmmfloojokngplpc",
+        edge: "https://microsoftedge.microsoft.com/addons/detail/jmanbhlemcjeaihdkefnahdiihiapahj",
+        firefox: "https://addons.mozilla.org/en-US/firefox/addon/higgsfield-prompt-automation/"
+      } },
+    { id: "thumbspy", name: "ThumbSpy", icon: "assets/thumbspy.png", accent: "#DC2626",
+      stores: {
+        chrome: "https://chromewebstore.google.com/detail/fjdkkffknideiholpimhjchdoajeckpb"
+      } }
+  ];
+
+  /* Trust questions people shouldn't have to click to read. */
+  var FAQ_OPEN = [0, 3];
+
+  var BROWSER_LABEL = { chrome: "Chrome", edge: "Edge", firefox: "Firefox" };
+  var BROWSER_ORDER = ["chrome", "edge", "firefox"];
+
+  /* Edge is Chromium and reports "Edg/" — it must be tested before Chrome.
+     Firefox matters most here: it cannot install from the Chrome Web Store
+     at all, so sending a Firefox visitor there is a dead end. */
+  var VIEWER = (function () {
+    var ua = navigator.userAgent;
+    if (/Firefox\/|FxiOS/i.test(ua)) return "firefox";
+    if (/Edg\//i.test(ua)) return "edge";
+    return "chrome";
+  })();
+
+  /* Fall back to Chrome when a product has no listing for this browser —
+     the button then honestly reads "Add to Chrome". */
+  function storeFor(p) {
+    var b = p.stores[VIEWER] ? VIEWER : "chrome";
+    return { browser: b, url: p.stores[b] };
+  }
+
+  /* Inline SVG flags — Windows ships no regional-indicator glyphs, so emoji
+     flags render as literal "GB" / "SA". Outer <svg> self-clips, no clipPath. */
+  var FLAGS = {
+    en: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#012169"/><path d="M0 0l60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0l60 40M60 0L0 40" stroke="#C8102E" stroke-width="4"/><path d="M30 0v40M0 20h60" stroke="#fff" stroke-width="13"/><path d="M30 0v40M0 20h60" stroke="#C8102E" stroke-width="8"/></svg>',
+    vi: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#DA251D"/><path d="M30 9l2.59 7.44 7.87.16-6.27 4.76 2.28 7.54L30 24.4l-6.47 4.5 2.28-7.54-6.27-4.76 7.87-.16z" fill="#FFFF00"/></svg>',
+    ja: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="11" fill="#BC002D"/></svg>',
+    ko: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="10" fill="#0047A0"/><path d="M20 20a10 10 0 0120 0 5 5 0 00-10 0 5 5 0 01-10 0z" fill="#CD2E3A"/><g fill="#000"><rect x="8" y="9" width="9" height="1.4"/><rect x="8" y="11.6" width="9" height="1.4"/><rect x="8" y="14.2" width="9" height="1.4"/><rect x="43" y="24.4" width="9" height="1.4"/><rect x="43" y="27" width="9" height="1.4"/><rect x="43" y="29.6" width="9" height="1.4"/></g></svg>',
+    zh: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#DE2910"/><path d="M12 6l1.76 5.06 5.36.11-4.27 3.24 1.55 5.13L12 16.47l-4.4 3.07 1.55-5.13-4.27-3.24 5.36-.11z" fill="#FFDE00"/><g fill="#FFDE00"><circle cx="24" cy="5" r="1.9"/><circle cx="29" cy="9.5" r="1.9"/><circle cx="29" cy="16" r="1.9"/><circle cx="24" cy="20.5" r="1.9"/></g></svg>',
+    es: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#AA151B"/><rect y="10" width="60" height="20" fill="#F1BF00"/></svg>',
+    hi: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#fff"/><rect width="60" height="13.33" fill="#FF9933"/><rect y="26.67" width="60" height="13.33" fill="#138808"/><circle cx="30" cy="20" r="5.4" fill="none" stroke="#000080" stroke-width="1.4"/><circle cx="30" cy="20" r="1.1" fill="#000080"/></svg>',
+    ar: '<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#006C35"/><rect x="12" y="24" width="36" height="2" rx="1" fill="#fff"/><path d="M46 25l4-2.4v4.8z" fill="#fff"/><g fill="#fff"><rect x="14" y="13" width="12" height="2.4" rx="1.2"/><rect x="29" y="13" width="7" height="2.4" rx="1.2"/><rect x="39" y="13" width="7" height="2.4" rx="1.2"/><rect x="19" y="17.5" width="22" height="2.4" rx="1.2"/></g></svg>'
+  };
+
+  var LANGS = [
+    { code: "en", name: "English",    dir: "ltr" },
+    { code: "vi", name: "Tiếng Việt", dir: "ltr" },
+    { code: "ja", name: "日本語",       dir: "ltr" },
+    { code: "ko", name: "한국어",       dir: "ltr" },
+    { code: "zh", name: "中文",         dir: "ltr" },
+    { code: "es", name: "Español",     dir: "ltr" },
+    { code: "hi", name: "हिन्दी",         dir: "ltr", complex: true },
+    { code: "ar", name: "العربية",      dir: "rtl", complex: true }
+  ];
+
+  var I18N = {
+    en: {
+      support: "Support", changelog: "Changelog", close: "Close", email: "Email",
+      languageLabel: "Language", themeLabel: "Theme",
+      extensionsTitle: "Extensions", faqTitle: "FAQ",
+      install: "Install",
+      addTo: "Add to {browser}", welcome: "Thanks for installing. Here are the other free tools I've built.",
+      contactTitle: "Something not working?",
+      contactBlurb: "Tell me and I'll fix it. Everything here is free.",
+      changelogBody: "Release notes live on each store listing:",
+      supportSubject: "Support request",
+      footerNote: "Independent extensions. Not affiliated with Magnific, Higgsfield, YouTube or Google.",
+      desc: {
+        magnific: "Bulk image and video prompts on Magnific.",
+        higgsfield: "Bulk image and video prompts on Higgsfield.",
+        thumbspy: "Find and download YouTube thumbnails."
+      },
+      faq: [
+        ["It stops when I switch tabs or minimize.",
+         "Chrome throttles timers in background tabs. Keep the tab visible — move it to a second window or monitor instead of minimizing."],
+        ["Downloads aren't numbered or foldered.",
+         "Turn off \"Ask where to save each file\" in <code>chrome://settings/downloads</code>. While it's on, Chrome ignores the filename and folder the extension asks for."],
+        ["Do these work on mobile?",
+         "No — desktop only. Chrome and Edge on Android and iOS don't run extensions."],
+        ["Is my data sent anywhere?",
+         "No. Everything runs locally in your browser. No account, no server, no telemetry."]
+      ]
+    },
+    vi: {
+      support: "Hỗ trợ", changelog: "Nhật ký thay đổi", close: "Đóng", email: "Email",
+      languageLabel: "Ngôn ngữ", themeLabel: "Giao diện",
+      extensionsTitle: "Tiện ích", faqTitle: "Câu hỏi thường gặp",
+      install: "Cài đặt",
+      addTo: "Thêm vào {browser}", welcome: "Cảm ơn bạn đã cài đặt. Đây là những công cụ miễn phí khác tôi đã làm.",
+      contactTitle: "Có gì đó không chạy?",
+      contactBlurb: "Báo cho tôi và tôi sẽ sửa. Mọi thứ ở đây đều miễn phí.",
+      changelogBody: "Ghi chú phát hành nằm trên từng trang cửa hàng:",
+      supportSubject: "Yêu cầu hỗ trợ",
+      footerNote: "Tiện ích độc lập. Không liên kết với Magnific, Higgsfield, YouTube hay Google.",
+      desc: {
+        magnific: "Chạy prompt ảnh và video hàng loạt trên Magnific.",
+        higgsfield: "Chạy prompt ảnh và video hàng loạt trên Higgsfield.",
+        thumbspy: "Tìm và tải hình thu nhỏ YouTube."
+      },
+      faq: [
+        ["Nó dừng khi tôi chuyển tab hoặc thu nhỏ.",
+         "Chrome hạn chế bộ đếm thời gian ở tab nền. Hãy để tab hiển thị — chuyển sang cửa sổ hoặc màn hình thứ hai thay vì thu nhỏ."],
+        ["Tệp tải xuống không đánh số hoặc không vào thư mục.",
+         "Tắt \"Hỏi nơi lưu từng tệp\" trong <code>chrome://settings/downloads</code>. Khi bật, Chrome bỏ qua tên tệp và thư mục mà tiện ích yêu cầu."],
+        ["Có chạy trên điện thoại không?",
+         "Không — chỉ máy tính. Chrome và Edge trên Android và iOS không chạy tiện ích."],
+        ["Dữ liệu của tôi có bị gửi đi không?",
+         "Không. Mọi thứ chạy cục bộ trong trình duyệt. Không tài khoản, không máy chủ, không đo từ xa."]
+      ]
+    },
+    ja: {
+      support: "サポート", changelog: "更新履歴", close: "閉じる", email: "メール",
+      languageLabel: "言語", themeLabel: "テーマ",
+      extensionsTitle: "拡張機能", faqTitle: "よくある質問",
+      install: "インストール",
+      addTo: "{browser} に追加", welcome: "インストールありがとうございます。私が作った他の無料ツールはこちらです。",
+      contactTitle: "動きませんか？",
+      contactBlurb: "教えてください。すぐ直します。ここにあるものはすべて無料です。",
+      changelogBody: "リリースノートは各ストアの掲載ページにあります:",
+      supportSubject: "サポートのお問い合わせ",
+      footerNote: "独立した拡張機能です。Magnific、Higgsfield、YouTube、Google とは無関係です。",
+      desc: {
+        magnific: "Magnific で画像・動画プロンプトを一括実行。",
+        higgsfield: "Higgsfield で画像・動画プロンプトを一括実行。",
+        thumbspy: "YouTube のサムネイルを検索してダウンロード。"
+      },
+      faq: [
+        ["タブを切り替えたり最小化すると止まります。",
+         "Chrome はバックグラウンドタブのタイマーを制限します。タブは表示したままにし、最小化せず別のウィンドウやモニターへ移動してください。"],
+        ["ダウンロードが連番にならない、フォルダーに分かれません。",
+         "<code>chrome://settings/downloads</code> で「各ファイルの保存場所を確認する」をオフに。オンのままだと拡張機能が指定したファイル名とフォルダーが無視されます。"],
+        ["モバイルで動きますか？",
+         "いいえ、デスクトップ専用です。Android と iOS の Chrome・Edge は拡張機能に対応していません。"],
+        ["データはどこかに送信されますか？",
+         "いいえ。すべてブラウザー内でローカルに動作します。アカウントもサーバーもテレメトリーもありません。"]
+      ]
+    },
+    ko: {
+      support: "지원", changelog: "변경 내역", close: "닫기", email: "이메일",
+      languageLabel: "언어", themeLabel: "테마",
+      extensionsTitle: "확장 프로그램", faqTitle: "자주 묻는 질문",
+      install: "설치",
+      addTo: "{browser}에 추가", welcome: "설치해 주셔서 감사합니다. 제가 만든 다른 무료 도구입니다.",
+      contactTitle: "작동하지 않나요?",
+      contactBlurb: "알려주시면 고치겠습니다. 여기 있는 건 모두 무료입니다.",
+      changelogBody: "릴리스 노트는 각 스토어 페이지에 있습니다:",
+      supportSubject: "지원 요청",
+      footerNote: "독립 확장 프로그램입니다. Magnific, Higgsfield, YouTube, Google과 무관합니다.",
+      desc: {
+        magnific: "Magnific에서 이미지·영상 프롬프트 일괄 실행.",
+        higgsfield: "Higgsfield에서 이미지·영상 프롬프트 일괄 실행.",
+        thumbspy: "YouTube 썸네일 검색 및 다운로드."
+      },
+      faq: [
+        ["탭을 바꾸거나 최소화하면 멈춥니다.",
+         "Chrome은 백그라운드 탭의 타이머를 제한합니다. 탭이 보이도록 두세요 — 최소화 대신 별도의 창이나 모니터로 옮기면 됩니다."],
+        ["다운로드에 번호가 없거나 폴더로 나뉘지 않습니다.",
+         "<code>chrome://settings/downloads</code>에서 \"각 파일의 저장 위치 확인\"을 끄세요. 켜져 있으면 확장 프로그램이 요청한 파일 이름과 폴더가 무시됩니다."],
+        ["모바일에서도 되나요?",
+         "아니요, 데스크톱 전용입니다. Android와 iOS의 Chrome·Edge는 확장 프로그램을 실행하지 않습니다."],
+        ["제 데이터가 전송되나요?",
+         "아니요. 모두 브라우저 안에서 로컬로 실행됩니다. 계정도, 서버도, 텔레메트리도 없습니다."]
+      ]
+    },
+    zh: {
+      support: "支持", changelog: "更新日志", close: "关闭", email: "邮件",
+      languageLabel: "语言", themeLabel: "主题",
+      extensionsTitle: "扩展", faqTitle: "常见问题",
+      install: "安装",
+      addTo: "添加到 {browser}", welcome: "感谢安装。这些是我做的其他免费工具。",
+      contactTitle: "有什么不工作？",
+      contactBlurb: "告诉我，我会修好。这里的一切都是免费的。",
+      changelogBody: "更新说明位于各自的商店页面：",
+      supportSubject: "支持请求",
+      footerNote: "独立扩展。与 Magnific、Higgsfield、YouTube 或 Google 无关。",
+      desc: {
+        magnific: "在 Magnific 批量运行图片和视频提示词。",
+        higgsfield: "在 Higgsfield 批量运行图片和视频提示词。",
+        thumbspy: "查找并下载 YouTube 缩略图。"
+      },
+      faq: [
+        ["切换标签页或最小化后就停了。",
+         "Chrome 会限制后台标签页的计时器。请让标签页保持可见——把它移到第二个窗口或显示器，而不是最小化。"],
+        ["下载没有编号，也没有分文件夹。",
+         "在 <code>chrome://settings/downloads</code> 中关闭\"下载前询问每个文件的保存位置\"。开启时，Chrome 会忽略扩展指定的文件名和文件夹。"],
+        ["能在手机上用吗？",
+         "不能，仅支持桌面端。Android 和 iOS 上的 Chrome 与 Edge 不运行扩展。"],
+        ["我的数据会被发送吗？",
+         "不会。一切都在你的浏览器本地运行。没有账号、没有服务器、没有遥测。"]
+      ]
+    },
+    es: {
+      support: "Soporte", changelog: "Novedades", close: "Cerrar", email: "Correo",
+      languageLabel: "Idioma", themeLabel: "Tema",
+      extensionsTitle: "Extensiones", faqTitle: "Preguntas frecuentes",
+      install: "Instalar",
+      addTo: "Añadir a {browser}", welcome: "Gracias por instalar. Estas son las otras herramientas gratuitas que he creado.",
+      contactTitle: "¿Algo no funciona?",
+      contactBlurb: "Dímelo y lo arreglo. Todo aquí es gratis.",
+      changelogBody: "Las notas de versión están en cada ficha de la tienda:",
+      supportSubject: "Solicitud de soporte",
+      footerNote: "Extensiones independientes. Sin afiliación con Magnific, Higgsfield, YouTube o Google.",
+      desc: {
+        magnific: "Prompts de imagen y vídeo en lote en Magnific.",
+        higgsfield: "Prompts de imagen y vídeo en lote en Higgsfield.",
+        thumbspy: "Busca y descarga miniaturas de YouTube."
+      },
+      faq: [
+        ["Se detiene al cambiar de pestaña o minimizar.",
+         "Chrome limita los temporizadores en pestañas en segundo plano. Mantén la pestaña visible: muévela a otra ventana o monitor en lugar de minimizarla."],
+        ["Las descargas no se numeran ni van a carpetas.",
+         "Desactiva \"Preguntar dónde guardar cada archivo\" en <code>chrome://settings/downloads</code>. Mientras esté activo, Chrome ignora el nombre y la carpeta que pide la extensión."],
+        ["¿Funcionan en el móvil?",
+         "No, solo en ordenador. Chrome y Edge en Android e iOS no ejecutan extensiones."],
+        ["¿Se envían mis datos?",
+         "No. Todo se ejecuta localmente en tu navegador. Sin cuenta, sin servidor, sin telemetría."]
+      ]
+    },
+    hi: {
+      support: "सहायता", changelog: "अपडेट लॉग", close: "बंद करें", email: "ईमेल",
+      languageLabel: "भाषा", themeLabel: "थीम",
+      extensionsTitle: "एक्सटेंशन", faqTitle: "सामान्य सवाल",
+      install: "इंस्टॉल",
+      addTo: "{browser} में जोड़ें", welcome: "इंस्टॉल करने के लिए धन्यवाद। ये हैं मेरे बनाए बाकी मुफ़्त टूल।",
+      contactTitle: "कुछ काम नहीं कर रहा?",
+      contactBlurb: "बताइए, मैं ठीक कर दूँगा। यहाँ सब कुछ मुफ़्त है।",
+      changelogBody: "रिलीज़ नोट्स हर स्टोर लिस्टिंग पर हैं:",
+      supportSubject: "सहायता अनुरोध",
+      footerNote: "स्वतंत्र एक्सटेंशन। Magnific, Higgsfield, YouTube या Google से संबंधित नहीं।",
+      desc: {
+        magnific: "Magnific पर इमेज और वीडियो प्रॉम्प्ट बल्क में।",
+        higgsfield: "Higgsfield पर इमेज और वीडियो प्रॉम्प्ट बल्क में।",
+        thumbspy: "YouTube थंबनेल खोजें और डाउनलोड करें।"
+      },
+      faq: [
+        ["टैब बदलते ही या मिनिमाइज़ करते ही रुक जाता है।",
+         "Chrome बैकग्राउंड टैब के टाइमर धीमे कर देता है। टैब दिखता रहने दें — मिनिमाइज़ करने के बजाय दूसरी विंडो या मॉनिटर पर ले जाएँ।"],
+        ["डाउनलोड नंबर नहीं हो रहे या फ़ोल्डर में नहीं जा रहे।",
+         "<code>chrome://settings/downloads</code> में \"हर फ़ाइल को सेव करने से पहले पूछें\" बंद करें। चालू रहने पर Chrome एक्सटेंशन के बताए फ़ाइल नाम और फ़ोल्डर को अनदेखा करता है।"],
+        ["क्या ये मोबाइल पर चलते हैं?",
+         "नहीं — सिर्फ़ डेस्कटॉप पर। Android और iOS के Chrome और Edge एक्सटेंशन नहीं चलाते।"],
+        ["क्या मेरा डेटा कहीं भेजा जाता है?",
+         "नहीं। सब कुछ आपके ब्राउज़र में लोकल चलता है। कोई अकाउंट, सर्वर या टेलीमेट्री नहीं।"]
+      ]
+    },
+    ar: {
+      support: "الدعم", changelog: "سجل التغييرات", close: "إغلاق", email: "البريد",
+      languageLabel: "اللغة", themeLabel: "المظهر",
+      extensionsTitle: "الامتدادات", faqTitle: "الأسئلة الشائعة",
+      install: "تثبيت",
+      addTo: "أضف إلى {browser}", welcome: "شكرًا لتثبيتك الامتداد. إليك بقية الأدوات المجانية التي صنعتها.",
+      contactTitle: "شيء لا يعمل؟",
+      contactBlurb: "أخبرني وسأصلحه. كل ما هنا مجاني.",
+      changelogBody: "ملاحظات الإصدار موجودة في صفحة كل امتداد في المتجر:",
+      supportSubject: "طلب دعم",
+      footerNote: "امتدادات مستقلة. لا ترتبط بـ Magnific أو Higgsfield أو YouTube أو Google.",
+      desc: {
+        magnific: "موجّهات صور وفيديو دفعة واحدة على Magnific.",
+        higgsfield: "موجّهات صور وفيديو دفعة واحدة على Higgsfield.",
+        thumbspy: "ابحث عن صور YouTube المصغّرة ونزّلها."
+      },
+      faq: [
+        ["يتوقّف عندما أنتقل بين التبويبات أو أصغّر النافذة.",
+         "يقيّد Chrome المؤقّتات في التبويبات الخلفية. أبقِ التبويب ظاهرًا — انقله إلى نافذة أو شاشة ثانية بدلًا من تصغيره."],
+        ["التنزيلات غير مرقّمة أو غير موزّعة على مجلّدات.",
+         "أوقف \"السؤال عن مكان حفظ كل ملف\" من <code>chrome://settings/downloads</code>. فبينما يكون مفعّلًا، يتجاهل Chrome اسم الملف والمجلّد اللذين يطلبهما الامتداد."],
+        ["هل تعمل على الهاتف؟",
+         "لا — على الحاسوب فقط. لا يشغّل Chrome و Edge الامتدادات على Android و iOS."],
+        ["هل تُرسَل بياناتي؟",
+         "لا. كل شيء يعمل محليًا داخل متصفّحك. بلا حساب ولا خادم ولا تتبّع."]
+      ]
+    }
+  };
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var mailto = function (subject) { return "mailto:" + EMAIL + "?subject=" + encodeURIComponent(subject); };
+  var OUT_ICON = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5m0-5L10 14M19 14v5H5V5h5"/></svg>';
+
+  var currentLang = "en";
+
+  function renderProducts(t) {
+    $("#products").innerHTML = PRODUCTS.map(function (p) {
+      var target = storeFor(p);
+      var label = t.addTo.replace("{browser}", BROWSER_LABEL[target.browser]);
+
+      var browsers = BROWSER_ORDER.filter(function (b) { return p.stores[b]; })
+        .map(function (b) {
+          return '<img src="assets/browser-' + b + '.svg" alt="' + BROWSER_LABEL[b] + '" title="' + BROWSER_LABEL[b] + '" loading="lazy">';
+        }).join("");
+
+      return '<div class="row">' +
+        /* whole row is a click target, but it's a mouse convenience only:
+           kept out of the tab order so the visible button owns focus */
+        '<a class="hit" href="' + target.url + '" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true"></a>' +
+        '<span class="icon"><img src="' + p.icon + '" alt="" loading="lazy"></span>' +
+        '<span class="txt"><span class="name">' + p.name + '</span>' +
+        '<span class="desc">' + t.desc[p.id] + "</span></span>" +
+        '<span class="browsers">' + browsers + "</span>" +
+        '<a class="btn btn--accent" href="' + target.url + '" target="_blank" rel="noopener noreferrer" aria-label="' +
+          p.name + " — " + label + '">' +
+          '<span class="lbl-full">' + label + '</span>' +
+          '<span class="lbl-short">' + t.install + "</span>" +
+        "</a></div>";
+    }).join("");
+  }
+
+  function renderFaq(t) {
+    $("#faqList").innerHTML = t.faq.map(function (row, i) {
+      var open = FAQ_OPEN.indexOf(i) !== -1;
+      return '<div class="faq-item' + (open ? " open" : "") + '">' +
+        '<button type="button" aria-expanded="' + open + '"><span>' + row[0] +
+        '</span><span class="plus" aria-hidden="true"></span></button>' +
+        '<div class="faq-panel"><p>' + row[1] + "</p></div></div>";
+    }).join("");
+  }
+
+  function renderChangelog() {
+    $("#changelogList").innerHTML = PRODUCTS.map(function (p) {
+      return '<a href="' + storeFor(p).url + '" target="_blank" rel="noopener noreferrer">' +
+        '<span class="swatch" style="background:' + p.accent + '"></span><span>' +
+        p.name + "</span>" + OUT_ICON + "</a>";
+    }).join("");
+  }
+
+  function renderLangMenu() {
+    $("#langMenu").innerHTML = LANGS.map(function (l) {
+      return '<button type="button" role="option" data-code="' + l.code + '" aria-selected="' +
+        (l.code === currentLang) + '"><span class="flag">' + FLAGS[l.code] + "</span><span>" +
+        l.name + "</span></button>";
+    }).join("");
+  }
+
+  function applyLang(code) {
+    var meta = LANGS.filter(function (l) { return l.code === code; })[0] || LANGS[0];
+    var t = I18N[meta.code];
+    currentLang = meta.code;
+
+    document.documentElement.lang = meta.code;
+    $("#root").setAttribute("dir", meta.dir);
+    $("#root").classList.toggle("script-complex", !!meta.complex);
+    $("#langFlag").innerHTML = FLAGS[meta.code];
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i18n]"), function (el) {
+      var val = t[el.getAttribute("data-i18n")];
+      if (val) el.textContent = val;
+    });
+
+    $("#supportBtn").href = mailto(t.supportSubject);
+    $("#emailBtn").href = mailto(t.supportSubject);
+    /* these collapse to icon-only, so name them explicitly */
+    $("#langBtn").setAttribute("aria-label", t.languageLabel + ": " + meta.name);
+    $("#changelogBtn").setAttribute("aria-label", t.changelog);
+    $("#supportBtn").setAttribute("aria-label", t.support);
+    $("#themeBtn").setAttribute("aria-label", t.themeLabel);
+
+    renderProducts(t);
+    renderFaq(t);
+    renderChangelog();
+    renderLangMenu();
+
+    try { localStorage.setItem("ma-lang", meta.code); } catch (e) {}
+  }
+
+  function detectLang() {
+    var saved;
+    try { saved = localStorage.getItem("ma-lang"); } catch (e) {}
+    if (saved && I18N[saved]) return saved;
+    var nav = (navigator.language || "en").slice(0, 2).toLowerCase();
+    return I18N[nav] ? nav : "en";
+  }
+
+  /* ------------------------------------------------------------------
+     BACKGROUND — the Magarlabs dot-grid as a job pipeline.
+     The lattice is the track; packets route along it in right angles,
+     trailing a comet tail and pinging every node they cross, then retire
+     and respawn. Queued work flowing through, finishing, being replaced.
+     Nothing floats free: every motion follows the grid.
+     ------------------------------------------------------------------ */
+  var BG = (function () {
+    var canvas = $("#bg");
+    if (!canvas || !canvas.getContext) return { sync: function () {} };
+    var ctx = canvas.getContext("2d");
+
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var fine = window.matchMedia("(pointer: fine)").matches;
+
+    var GAP = 30;     // lattice spacing, px
+    var DOT_R = 1;    // resting node radius
+    var REACH = 150;  // pointer bloom radius
+    var TRAIL = 26;   // samples kept per packet — ~2 cells of streak, enough to read as travel
+    var FLASH = 26;   // node ping lifetime, frames
+    var DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+    var w = 0, h = 0, dpr = 1, cols = 0, rows = 0;
+    var tx = -9999, ty = -9999, px = -9999, py = -9999;
+    var dot = "rgba(0,0,0,.1)", hi = [37, 99, 235];
+    var packets = [], flashes = [];
+
+    /* The reading column is off limits — traffic belongs in the side margins.
+       Measured from <main> rather than hardcoded, so it tracks the layout. */
+    var colL = 0, colR = 0, sideRoom = 0;
+    var FEATHER = 80;   // px over which traffic fades out as it nears the column
+    var MIN_ROOM = 70;  // narrower margins than this aren't worth animating
+
+    function measureColumn() {
+      var m = document.querySelector("main");
+      if (!m) { colL = 0; colR = w; sideRoom = 0; return; }
+      var r = m.getBoundingClientRect();
+      colL = r.left; colR = r.right;
+      sideRoom = Math.min(colL, w - colR);
+    }
+
+    /* 1 out in the margins, 0 over the column, soft ramp between */
+    function clearance(x) {
+      var d = x < colL ? colL - x : (x > colR ? x - colR : 0);
+      if (d <= 0) return 0;
+      return d >= FEATHER ? 1 : d / FEATHER;
+    }
+
+    function makePacket() {
+      var d = DIRS[(Math.random() * 4) | 0];
+      // spawn in a margin so packets start where they'll actually be seen
+      var leftCols = Math.floor((colL - 6) / GAP);
+      var rightCol0 = Math.ceil((colR + 6) / GAP);
+      var ni;
+      if (Math.random() < 0.5 && leftCols > 0) ni = (Math.random() * leftCols) | 0;
+      else ni = rightCol0 + ((Math.random() * Math.max(1, cols - rightCol0)) | 0);
+
+      return {
+        ni: ni,
+        nj: (Math.random() * rows) | 0,
+        di: d[0], dj: d[1],
+        t: Math.random(),
+        spd: 1.8 + Math.random() * 1.4,          // px per frame
+        life: 0,
+        ttl: 300 + ((Math.random() * 420) | 0),  // frames before the job retires
+        trail: []
+      };
+    }
+
+    function seed() {
+      packets = [];
+      flashes = [];
+      // no usable margin (phones, narrow windows) — lattice only, and no sim to run
+      if (sideRoom < MIN_ROOM) return;
+      // scale the fleet to the margin area, not the whole viewport
+      var n = Math.max(4, Math.min(16, Math.round((sideRoom * 2 * h) / 46000)));
+      for (var i = 0; i < n; i++) {
+        var p = makePacket();
+        p.life = (Math.random() * 200) | 0;      // stagger so they don't fade in unison
+        packets.push(p);
+      }
+    }
+
+    function step(p) {
+      p.life++;
+      p.t += p.spd / GAP;
+
+      while (p.t >= 1) {
+        p.ni += p.di; p.nj += p.dj; p.t -= 1;
+        if (flashes.length < 60) flashes.push({ x: p.ni * GAP, y: p.nj * GAP, age: 0 });
+        if (Math.random() < 0.3) {               // turn 90deg, never reverse
+          var turnLeft = Math.random() < 0.5;
+          var ndi = turnLeft ? p.dj : -p.dj;
+          var ndj = turnLeft ? -p.di : p.di;
+          p.di = ndi; p.dj = ndj;
+        }
+      }
+
+      var off = p.ni < -1 || p.nj < -1 || p.ni > cols + 1 || p.nj > rows + 1;
+      if (off || p.life > p.ttl) {
+        var fresh = makePacket();
+        for (var k in fresh) p[k] = fresh[k];
+        return;
+      }
+
+      p.trail.unshift({ x: (p.ni + p.di * p.t) * GAP, y: (p.nj + p.dj * p.t) * GAP });
+      if (p.trail.length > TRAIL) p.trail.pop();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+
+      // the track: one batched path for the whole lattice
+      ctx.fillStyle = dot;
+      ctx.beginPath();
+      for (var i = 0; i <= cols; i++) {
+        var x = i * GAP;
+        for (var j = 0; j <= rows; j++) {
+          var y = j * GAP;
+          ctx.moveTo(x + DOT_R, y);
+          ctx.arc(x, y, DOT_R, 0, 6.2832);
+        }
+      }
+      ctx.fill();
+
+      if (reduce) return;
+
+      var rgb = hi[0] + "," + hi[1] + "," + hi[2];
+
+      // node pings, expanding and fading where a packet just landed
+      for (var f = flashes.length - 1; f >= 0; f--) {
+        var fl = flashes[f];
+        fl.age++;
+        if (fl.age > FLASH) { flashes.splice(f, 1); continue; }
+        var cf = clearance(fl.x);
+        if (cf <= 0) continue;
+        var k = fl.age / FLASH;
+        ctx.beginPath();
+        ctx.arc(fl.x, fl.y, DOT_R + k * 5.5, 0, 6.2832);
+        ctx.strokeStyle = "rgba(" + rgb + "," + ((1 - k) * 0.3 * cf).toFixed(3) + ")";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // packets: comet tail + bright head
+      ctx.lineCap = "round";
+      for (var q = 0; q < packets.length; q++) {
+        var p = packets[q];
+        var a = Math.min(p.life / 40, (p.ttl - p.life) / 40, 1);
+        if (a <= 0 || !p.trail.length) continue;
+        for (var s2 = 0; s2 < p.trail.length - 1; s2++) {
+          // per-segment, so a trail dissolves as it slides toward the column
+          var cs = clearance(p.trail[s2].x);
+          if (cs <= 0) continue;
+          var fade = 1 - s2 / TRAIL;
+          ctx.beginPath();
+          ctx.moveTo(p.trail[s2].x, p.trail[s2].y);
+          ctx.lineTo(p.trail[s2 + 1].x, p.trail[s2 + 1].y);
+          ctx.strokeStyle = "rgba(" + rgb + "," + (a * fade * 0.42 * cs).toFixed(3) + ")";
+          ctx.lineWidth = fade * 1.5 + 0.3;
+          ctx.stroke();
+        }
+        var ch = clearance(p.trail[0].x);
+        if (ch > 0) {
+          ctx.beginPath();
+          ctx.arc(p.trail[0].x, p.trail[0].y, 1.8, 0, 6.2832);
+          ctx.fillStyle = "rgba(" + rgb + "," + (a * 0.85 * ch).toFixed(3) + ")";
+          ctx.fill();
+        }
+      }
+
+      // pointer bloom, dialled down so the packets stay the story
+      if (!fine || px < -1000) return;
+      var i0 = Math.floor((px - REACH) / GAP), i1 = Math.ceil((px + REACH) / GAP);
+      var j0 = Math.floor((py - REACH) / GAP), j1 = Math.ceil((py + REACH) / GAP);
+      for (var a2 = i0; a2 <= i1; a2++) {
+        var ax = a2 * GAP;
+        for (var b = j0; b <= j1; b++) {
+          var by = b * GAP;
+          var dx = ax - px, dy = by - py;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > REACH) continue;
+          var cb = clearance(ax);
+          if (cb <= 0) continue;
+          var lit = 1 - dist / REACH;
+          lit *= lit;
+          ctx.beginPath();
+          ctx.arc(ax, by, DOT_R + lit * 1.5, 0, 6.2832);
+          ctx.fillStyle = "rgba(" + rgb + "," + (lit * 0.45 * cb).toFixed(3) + ")";
+          ctx.fill();
+        }
+      }
+    }
+
+    function frame() {
+      for (var i = 0; i < packets.length; i++) step(packets[i]);
+      px += (tx - px) * 0.1;
+      py += (ty - py) * 0.1;
+      draw();
+      requestAnimationFrame(frame);
+    }
+
+    function sync() {
+      var cs = getComputedStyle(document.documentElement);
+      var d = cs.getPropertyValue("--dot").trim();
+      var a = cs.getPropertyValue("--dot-hi").trim();
+      if (d) dot = d;
+      if (a) hi = a.split(",").map(Number);
+      if (reduce) draw();
+    }
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth; h = window.innerHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(w / GAP);
+      rows = Math.ceil(h / GAP);
+      measureColumn();   // must precede seed() — spawning is margin-relative
+      seed();
+      if (reduce) draw();
+    }
+
+    sync();
+    resize();
+    window.addEventListener("resize", resize);
+
+    if (fine && !reduce) {
+      window.addEventListener("pointermove", function (e) {
+        if (px < -1000) { px = e.clientX; py = e.clientY; }
+        tx = e.clientX; ty = e.clientY;
+      }, { passive: true });
+      document.addEventListener("pointerleave", function () { tx = -9999; ty = -9999; });
+    }
+    if (!reduce) requestAnimationFrame(frame);
+
+    return { sync: sync };
+  })();
+
+  /* ---------- theme (dark is the default; only "light" is ever stored) ---------- */
+  var THEME_COLOR = { dark: "#12110E", light: "#FAF9F6" };
+  function applyTheme(mode) {
+    var light = mode === "light";
+    if (light) document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+    $("#themeBtn").setAttribute("aria-pressed", String(light));
+    $("#themeColor").setAttribute("content", light ? THEME_COLOR.light : THEME_COLOR.dark);
+    BG.sync(); // dot colours come from the theme tokens
+    try { localStorage.setItem("ma-theme", light ? "light" : "dark"); } catch (e) {}
+  }
+  $("#themeBtn").addEventListener("click", function () {
+    applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light");
+  });
+  /* the <head> bootstrap already set the attribute — just sync button + meta */
+  applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
+
+  var langWrap = $("#lang");
+  function closeLang() {
+    langWrap.classList.remove("open");
+    $("#langBtn").setAttribute("aria-expanded", "false");
+  }
+  $("#langBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var open = langWrap.classList.toggle("open");
+    $("#langBtn").setAttribute("aria-expanded", String(open));
+  });
+  $("#langMenu").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-code]");
+    if (!btn) return;
+    applyLang(btn.getAttribute("data-code"));
+    closeLang();
+  });
+
+  $("#faqList").addEventListener("click", function (e) {
+    var btn = e.target.closest("button");
+    if (!btn) return;
+    var open = btn.parentElement.classList.toggle("open");
+    btn.setAttribute("aria-expanded", String(open));
+  });
+
+  var modal = $("#changelogModal");
+  function closeModal() { modal.classList.remove("open"); }
+  $("#changelogBtn").addEventListener("click", function () { modal.classList.add("open"); });
+  $("#changelogClose").addEventListener("click", closeModal);
+  modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+
+  document.addEventListener("click", closeLang);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { closeModal(); closeLang(); }
+  });
+
+  applyLang(detectLang());
+})();
+</script>
+</body>
+</html>
