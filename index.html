@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Magarlabs — Browser Extensions</title>
-<meta name="description" content="Free browser extensions by Deepak Thapa. No account, no server.">
+<meta name="description" content="Free browser extensions by Deepak Thapa.">
 <meta name="author" content="Deepak Thapa">
 <meta property="og:title" content="Magarlabs — Browser Extensions">
 <meta property="og:description" content="Free browser extensions by Deepak Thapa.">
@@ -160,6 +160,13 @@
     overflow: hidden; border: 1px solid var(--line); background: var(--panel-2);
   }
   .row .icon img { width: 100%; height: 100%; object-fit: cover; }
+  .row .icon--plain {
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+  }
+  .row .icon--plain img { object-fit: contain; }
   .row .txt { flex: 1; min-width: 0; }
   .row .name { display: block; font-family: var(--f-display); font-size: 14px; font-weight: 600; line-height: 1.3; }
   .row .desc { display: block; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
@@ -346,8 +353,7 @@
   var EMAIL = "thapadeepak726@gmail.com";
 
   /* Add a new extension by appending one object. `stores` lists every listing
-     it actually has — the Install button routes to the one matching the
-     visitor's browser. */
+     it actually has; unreleased products can link to their product page. */
   var PRODUCTS = [
     { id: "magnific", name: "Magnific Automation", icon: "assets/magnific-automation.png", accent: "#2563EB",
       stores: {
@@ -360,6 +366,12 @@
         chrome: "https://chromewebstore.google.com/detail/higgsfield-automation-bul/hdhkmndbgklmnccbdmmfloojokngplpc",
         edge: "https://microsoftedge.microsoft.com/addons/detail/jmanbhlemcjeaihdkefnahdiihiapahj",
         firefox: "https://addons.mozilla.org/en-US/firefox/addon/higgsfield-prompt-automation/"
+      } },
+    { id: "googleFlow", name: "Google Flow Automation", icon: "assets/google-flow-automation.png", accent: "#7C3AED",
+      plainIcon: true,
+      url: "https://google-flow-automation.pages.dev/",
+      stores: {
+        chrome: "https://chromewebstore.google.com/detail/kfkojfkfjlmaemjocdidplabaaglgggi"
       } },
     { id: "thumbspy", name: "ThumbSpy", icon: "assets/thumbspy.png", accent: "#DC2626",
       stores: {
@@ -383,9 +395,12 @@
     return "chrome";
   })();
 
-  /* Fall back to Chrome when a product has no listing for this browser —
-     the button then honestly reads "Add to Chrome". */
+  /* Fall back to Chrome when a listed product has no listing for this browser.
+     Products with no store listings use their product page instead. */
   function storeFor(p) {
+    if (!p.stores || !Object.keys(p.stores).length) {
+      return { browser: null, url: p.url };
+    }
     var b = p.stores[VIEWER] ? VIEWER : "chrome";
     return { browser: b, url: p.stores[b] };
   }
@@ -419,16 +434,17 @@
       support: "Support", changelog: "Changelog", close: "Close", email: "Email",
       languageLabel: "Language", themeLabel: "Theme",
       extensionsTitle: "Extensions", faqTitle: "FAQ",
-      install: "Install",
+      install: "Install", view: "View",
       addTo: "Add to {browser}", welcome: "Thanks for installing. Here are the other free tools I've built.",
       contactTitle: "Something not working?",
       contactBlurb: "Tell me and I'll fix it. Everything here is free.",
-      changelogBody: "Release notes live on each store listing:",
+      changelogBody: "Release notes and product pages:",
       supportSubject: "Support request",
       footerNote: "Independent extensions. Not affiliated with Magnific, Higgsfield, YouTube or Google.",
       desc: {
         magnific: "Bulk image and video prompts on Magnific.",
         higgsfield: "Bulk image and video prompts on Higgsfield.",
+        googleFlow: "Batch image and video prompts in Google Flow.",
         thumbspy: "Find and download YouTube thumbnails."
       },
       faq: [
@@ -439,23 +455,24 @@
         ["Do these work on mobile?",
          "No — desktop only. Chrome and Edge on Android and iOS don't run extensions."],
         ["Is my data sent anywhere?",
-         "No. Everything runs locally in your browser. No account, no server, no telemetry."]
+         "Automation runs in your browser. Some tools may use sign-in or hosted compatibility checks, but there is no telemetry."]
       ]
     },
     vi: {
       support: "Hỗ trợ", changelog: "Nhật ký thay đổi", close: "Đóng", email: "Email",
       languageLabel: "Ngôn ngữ", themeLabel: "Giao diện",
       extensionsTitle: "Tiện ích", faqTitle: "Câu hỏi thường gặp",
-      install: "Cài đặt",
+      install: "Cài đặt", view: "Xem",
       addTo: "Thêm vào {browser}", welcome: "Cảm ơn bạn đã cài đặt. Đây là những công cụ miễn phí khác tôi đã làm.",
       contactTitle: "Có gì đó không chạy?",
       contactBlurb: "Báo cho tôi và tôi sẽ sửa. Mọi thứ ở đây đều miễn phí.",
-      changelogBody: "Ghi chú phát hành nằm trên từng trang cửa hàng:",
+      changelogBody: "Ghi chú phát hành và trang sản phẩm:",
       supportSubject: "Yêu cầu hỗ trợ",
       footerNote: "Tiện ích độc lập. Không liên kết với Magnific, Higgsfield, YouTube hay Google.",
       desc: {
         magnific: "Chạy prompt ảnh và video hàng loạt trên Magnific.",
         higgsfield: "Chạy prompt ảnh và video hàng loạt trên Higgsfield.",
+        googleFlow: "Chạy prompt ảnh và video hàng loạt trong Google Flow.",
         thumbspy: "Tìm và tải hình thu nhỏ YouTube."
       },
       faq: [
@@ -466,23 +483,24 @@
         ["Có chạy trên điện thoại không?",
          "Không — chỉ máy tính. Chrome và Edge trên Android và iOS không chạy tiện ích."],
         ["Dữ liệu của tôi có bị gửi đi không?",
-         "Không. Mọi thứ chạy cục bộ trong trình duyệt. Không tài khoản, không máy chủ, không đo từ xa."]
+         "Tự động hóa chạy trong trình duyệt của bạn. Một số công cụ có thể dùng đăng nhập hoặc kiểm tra tương thích được lưu trữ, nhưng không có đo từ xa."]
       ]
     },
     ja: {
       support: "サポート", changelog: "更新履歴", close: "閉じる", email: "メール",
       languageLabel: "言語", themeLabel: "テーマ",
       extensionsTitle: "拡張機能", faqTitle: "よくある質問",
-      install: "インストール",
+      install: "インストール", view: "表示",
       addTo: "{browser} に追加", welcome: "インストールありがとうございます。私が作った他の無料ツールはこちらです。",
       contactTitle: "動きませんか？",
       contactBlurb: "教えてください。すぐ直します。ここにあるものはすべて無料です。",
-      changelogBody: "リリースノートは各ストアの掲載ページにあります:",
+      changelogBody: "リリースノートと製品ページ:",
       supportSubject: "サポートのお問い合わせ",
       footerNote: "独立した拡張機能です。Magnific、Higgsfield、YouTube、Google とは無関係です。",
       desc: {
         magnific: "Magnific で画像・動画プロンプトを一括実行。",
         higgsfield: "Higgsfield で画像・動画プロンプトを一括実行。",
+        googleFlow: "Google Flow で画像・動画プロンプトを一括実行。",
         thumbspy: "YouTube のサムネイルを検索してダウンロード。"
       },
       faq: [
@@ -493,23 +511,24 @@
         ["モバイルで動きますか？",
          "いいえ、デスクトップ専用です。Android と iOS の Chrome・Edge は拡張機能に対応していません。"],
         ["データはどこかに送信されますか？",
-         "いいえ。すべてブラウザー内でローカルに動作します。アカウントもサーバーもテレメトリーもありません。"]
+         "自動化はブラウザー内で動作します。一部のツールはログインやホストされた互換性チェックを使う場合がありますが、テレメトリーはありません。"]
       ]
     },
     ko: {
       support: "지원", changelog: "변경 내역", close: "닫기", email: "이메일",
       languageLabel: "언어", themeLabel: "테마",
       extensionsTitle: "확장 프로그램", faqTitle: "자주 묻는 질문",
-      install: "설치",
+      install: "설치", view: "보기",
       addTo: "{browser}에 추가", welcome: "설치해 주셔서 감사합니다. 제가 만든 다른 무료 도구입니다.",
       contactTitle: "작동하지 않나요?",
       contactBlurb: "알려주시면 고치겠습니다. 여기 있는 건 모두 무료입니다.",
-      changelogBody: "릴리스 노트는 각 스토어 페이지에 있습니다:",
+      changelogBody: "릴리스 노트 및 제품 페이지:",
       supportSubject: "지원 요청",
       footerNote: "독립 확장 프로그램입니다. Magnific, Higgsfield, YouTube, Google과 무관합니다.",
       desc: {
         magnific: "Magnific에서 이미지·영상 프롬프트 일괄 실행.",
         higgsfield: "Higgsfield에서 이미지·영상 프롬프트 일괄 실행.",
+        googleFlow: "Google Flow에서 이미지·영상 프롬프트 일괄 실행.",
         thumbspy: "YouTube 썸네일 검색 및 다운로드."
       },
       faq: [
@@ -520,23 +539,24 @@
         ["모바일에서도 되나요?",
          "아니요, 데스크톱 전용입니다. Android와 iOS의 Chrome·Edge는 확장 프로그램을 실행하지 않습니다."],
         ["제 데이터가 전송되나요?",
-         "아니요. 모두 브라우저 안에서 로컬로 실행됩니다. 계정도, 서버도, 텔레메트리도 없습니다."]
+         "자동화는 브라우저 안에서 실행됩니다. 일부 도구는 로그인이나 호스팅된 호환성 확인을 사용할 수 있지만, 텔레메트리는 없습니다."]
       ]
     },
     zh: {
       support: "支持", changelog: "更新日志", close: "关闭", email: "邮件",
       languageLabel: "语言", themeLabel: "主题",
       extensionsTitle: "扩展", faqTitle: "常见问题",
-      install: "安装",
+      install: "安装", view: "查看",
       addTo: "添加到 {browser}", welcome: "感谢安装。这些是我做的其他免费工具。",
       contactTitle: "有什么不工作？",
       contactBlurb: "告诉我，我会修好。这里的一切都是免费的。",
-      changelogBody: "更新说明位于各自的商店页面：",
+      changelogBody: "更新说明和产品页面：",
       supportSubject: "支持请求",
       footerNote: "独立扩展。与 Magnific、Higgsfield、YouTube 或 Google 无关。",
       desc: {
         magnific: "在 Magnific 批量运行图片和视频提示词。",
         higgsfield: "在 Higgsfield 批量运行图片和视频提示词。",
+        googleFlow: "在 Google Flow 批量运行图片和视频提示词。",
         thumbspy: "查找并下载 YouTube 缩略图。"
       },
       faq: [
@@ -547,23 +567,24 @@
         ["能在手机上用吗？",
          "不能，仅支持桌面端。Android 和 iOS 上的 Chrome 与 Edge 不运行扩展。"],
         ["我的数据会被发送吗？",
-         "不会。一切都在你的浏览器本地运行。没有账号、没有服务器、没有遥测。"]
+         "自动化在你的浏览器中运行。有些工具可能会使用登录或托管的兼容性检查，但没有遥测。"]
       ]
     },
     es: {
       support: "Soporte", changelog: "Novedades", close: "Cerrar", email: "Correo",
       languageLabel: "Idioma", themeLabel: "Tema",
       extensionsTitle: "Extensiones", faqTitle: "Preguntas frecuentes",
-      install: "Instalar",
+      install: "Instalar", view: "Ver",
       addTo: "Añadir a {browser}", welcome: "Gracias por instalar. Estas son las otras herramientas gratuitas que he creado.",
       contactTitle: "¿Algo no funciona?",
       contactBlurb: "Dímelo y lo arreglo. Todo aquí es gratis.",
-      changelogBody: "Las notas de versión están en cada ficha de la tienda:",
+      changelogBody: "Notas de versión y páginas de producto:",
       supportSubject: "Solicitud de soporte",
       footerNote: "Extensiones independientes. Sin afiliación con Magnific, Higgsfield, YouTube o Google.",
       desc: {
         magnific: "Prompts de imagen y vídeo en lote en Magnific.",
         higgsfield: "Prompts de imagen y vídeo en lote en Higgsfield.",
+        googleFlow: "Prompts de imagen y vídeo en lote en Google Flow.",
         thumbspy: "Busca y descarga miniaturas de YouTube."
       },
       faq: [
@@ -574,23 +595,24 @@
         ["¿Funcionan en el móvil?",
          "No, solo en ordenador. Chrome y Edge en Android e iOS no ejecutan extensiones."],
         ["¿Se envían mis datos?",
-         "No. Todo se ejecuta localmente en tu navegador. Sin cuenta, sin servidor, sin telemetría."]
+         "La automatización se ejecuta en tu navegador. Algunas herramientas pueden usar inicio de sesión o comprobaciones de compatibilidad alojadas, pero no hay telemetría."]
       ]
     },
     hi: {
       support: "सहायता", changelog: "अपडेट लॉग", close: "बंद करें", email: "ईमेल",
       languageLabel: "भाषा", themeLabel: "थीम",
       extensionsTitle: "एक्सटेंशन", faqTitle: "सामान्य सवाल",
-      install: "इंस्टॉल",
+      install: "इंस्टॉल", view: "देखें",
       addTo: "{browser} में जोड़ें", welcome: "इंस्टॉल करने के लिए धन्यवाद। ये हैं मेरे बनाए बाकी मुफ़्त टूल।",
       contactTitle: "कुछ काम नहीं कर रहा?",
       contactBlurb: "बताइए, मैं ठीक कर दूँगा। यहाँ सब कुछ मुफ़्त है।",
-      changelogBody: "रिलीज़ नोट्स हर स्टोर लिस्टिंग पर हैं:",
+      changelogBody: "रिलीज़ नोट्स और प्रोडक्ट पेज:",
       supportSubject: "सहायता अनुरोध",
       footerNote: "स्वतंत्र एक्सटेंशन। Magnific, Higgsfield, YouTube या Google से संबंधित नहीं।",
       desc: {
         magnific: "Magnific पर इमेज और वीडियो प्रॉम्प्ट बल्क में।",
         higgsfield: "Higgsfield पर इमेज और वीडियो प्रॉम्प्ट बल्क में।",
+        googleFlow: "Google Flow में इमेज और वीडियो प्रॉम्प्ट बल्क में।",
         thumbspy: "YouTube थंबनेल खोजें और डाउनलोड करें।"
       },
       faq: [
@@ -601,23 +623,24 @@
         ["क्या ये मोबाइल पर चलते हैं?",
          "नहीं — सिर्फ़ डेस्कटॉप पर। Android और iOS के Chrome और Edge एक्सटेंशन नहीं चलाते।"],
         ["क्या मेरा डेटा कहीं भेजा जाता है?",
-         "नहीं। सब कुछ आपके ब्राउज़र में लोकल चलता है। कोई अकाउंट, सर्वर या टेलीमेट्री नहीं।"]
+         "ऑटोमेशन आपके ब्राउज़र में चलता है। कुछ टूल साइन-इन या होस्टेड कम्पैटिबिलिटी चेक इस्तेमाल कर सकते हैं, लेकिन टेलीमेट्री नहीं है।"]
       ]
     },
     ar: {
       support: "الدعم", changelog: "سجل التغييرات", close: "إغلاق", email: "البريد",
       languageLabel: "اللغة", themeLabel: "المظهر",
       extensionsTitle: "الامتدادات", faqTitle: "الأسئلة الشائعة",
-      install: "تثبيت",
+      install: "تثبيت", view: "عرض",
       addTo: "أضف إلى {browser}", welcome: "شكرًا لتثبيتك الامتداد. إليك بقية الأدوات المجانية التي صنعتها.",
       contactTitle: "شيء لا يعمل؟",
       contactBlurb: "أخبرني وسأصلحه. كل ما هنا مجاني.",
-      changelogBody: "ملاحظات الإصدار موجودة في صفحة كل امتداد في المتجر:",
+      changelogBody: "ملاحظات الإصدار وصفحات المنتج:",
       supportSubject: "طلب دعم",
       footerNote: "امتدادات مستقلة. لا ترتبط بـ Magnific أو Higgsfield أو YouTube أو Google.",
       desc: {
         magnific: "موجّهات صور وفيديو دفعة واحدة على Magnific.",
         higgsfield: "موجّهات صور وفيديو دفعة واحدة على Higgsfield.",
+        googleFlow: "موجّهات صور وفيديو دفعة واحدة في Google Flow.",
         thumbspy: "ابحث عن صور YouTube المصغّرة ونزّلها."
       },
       faq: [
@@ -628,7 +651,7 @@
         ["هل تعمل على الهاتف؟",
          "لا — على الحاسوب فقط. لا يشغّل Chrome و Edge الامتدادات على Android و iOS."],
         ["هل تُرسَل بياناتي؟",
-         "لا. كل شيء يعمل محليًا داخل متصفّحك. بلا حساب ولا خادم ولا تتبّع."]
+         "تعمل الأتمتة داخل متصفّحك. قد تستخدم بعض الأدوات تسجيل الدخول أو فحوصات توافق مستضافة، لكن لا يوجد تتبّع."]
       ]
     }
   };
@@ -642,7 +665,7 @@
   function renderProducts(t) {
     $("#products").innerHTML = PRODUCTS.map(function (p) {
       var target = storeFor(p);
-      var label = t.addTo.replace("{browser}", BROWSER_LABEL[target.browser]);
+      var label = target.browser ? t.addTo.replace("{browser}", BROWSER_LABEL[target.browser]) : t.view;
 
       var browsers = BROWSER_ORDER.filter(function (b) { return p.stores[b]; })
         .map(function (b) {
@@ -653,14 +676,14 @@
         /* whole row is a click target, but it's a mouse convenience only:
            kept out of the tab order so the visible button owns focus */
         '<a class="hit" href="' + target.url + '" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true"></a>' +
-        '<span class="icon"><img src="' + p.icon + '" alt="" loading="lazy"></span>' +
+        '<span class="icon' + (p.plainIcon ? " icon--plain" : "") + '"><img src="' + p.icon + '" alt="" loading="lazy"></span>' +
         '<span class="txt"><span class="name">' + p.name + '</span>' +
         '<span class="desc">' + t.desc[p.id] + "</span></span>" +
         '<span class="browsers">' + browsers + "</span>" +
         '<a class="btn btn--accent" href="' + target.url + '" target="_blank" rel="noopener noreferrer" aria-label="' +
           p.name + " — " + label + '">' +
           '<span class="lbl-full">' + label + '</span>' +
-          '<span class="lbl-short">' + t.install + "</span>" +
+          '<span class="lbl-short">' + (target.browser ? t.install : t.view) + "</span>" +
         "</a></div>";
     }).join("");
   }
